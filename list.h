@@ -1,10 +1,8 @@
 #ifndef LIST_H
 #define LIST_H
 
-
-
-struct clientList *clntList;
-
+//the definition of the list is in server.c
+extern struct clientList *clntList;
 
 struct ClientNode{
 
@@ -15,9 +13,16 @@ struct ClientNode{
     int status;
     char* ip;
     int port;
-    struct PendingMessageList *pendingMsgList;
     unsigned int lastMessageId;
+    struct PendingMessageList *pendingMsgList;
 	struct ClientNode *next;
+    struct ClientNode *prev;
+};
+
+struct clientList{
+    struct ClientNode *head;
+    struct ClientNode *tail;
+    int size;
 };
 
 
@@ -28,14 +33,10 @@ struct PendingMessageNode{
     char* message;
     char* aliasSender;
     char* aliasReceiver;
+    struct PendingMessageNode *prev;
     struct PendingMessageNode *next;
 };
 
-struct clientList{
-    struct ClientNode *head;
-    struct ClientNode *tail;
-    int size;
-};
 
 
 struct PendingMessageList{
