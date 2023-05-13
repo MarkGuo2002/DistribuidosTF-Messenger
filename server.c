@@ -8,19 +8,6 @@
 struct clientList *clntList;
 
 
-/*
-void deleteList(){
-    struct ClientNode *aux = clntList->head;
-    struct ClientNode *prev = NULL;
-    while (aux != NULL){
-        prev = aux;
-        aux = aux->next;
-        free(prev);
-    }
-    free(clntList);
-}
-*/
-
 //server functions 
 
 int init(){
@@ -74,7 +61,7 @@ int clntRegister(char* username, char* alias, char* birthdate){
 }
 
 
-int unregister(char* username){
+int clntUnregister(char* username){
     struct ClientNode *aux = findUsername(username);
     if (aux == NULL){
         printf("Username not found\n");
@@ -98,7 +85,7 @@ int unregister(char* username){
 }
 
 
-int connect(char *alias, char *ip, int port){
+int clntConnect(char *alias, char *ip, int port){
     struct ClientNode *aux = findAlias(alias);
     if (aux == NULL){
         printf("Alias not found\n");
@@ -121,7 +108,7 @@ int connect(char *alias, char *ip, int port){
     return 3;
 }
 
-int disconnect(char *alias){
+int clntDisconnect(char *alias){
     struct ClientNode *aux = findAlias(alias);
     if (aux == NULL){
         printf("Alias not found\n");
@@ -140,7 +127,7 @@ int disconnect(char *alias){
     return 3;
 }
 
-int sendMessage(char* senderAlias, char* receiverAlias, char* message){
+int clntSendMessage(char* senderAlias, char* receiverAlias, char* message){
     struct ClientNode * sendernode = findAlias(senderAlias);
     struct ClientNode * receivernode = findAlias(receiverAlias);
     if ((sendernode == NULL) || (receivernode == NULL)){

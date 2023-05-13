@@ -4,10 +4,10 @@
 
 int init();
 int clntRegister(char* username, char* alias, char* birthdate);
-int unregister(char* username);
-int connect(char *alias, char *ip, int port);
-int disconnect(char *alias);
-int sendMessage(char* senderAlias, char* receiverAlias, char* message);
+int clntUnregister(char* username);
+int clntConnect(char *alias, char *ip, int port);
+int clntDisconnect(char *alias);
+int clntSendMessage(char* senderAlias, char* receiverAlias, char* message);
 
 
 #endif

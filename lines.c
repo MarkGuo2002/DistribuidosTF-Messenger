@@ -3,7 +3,7 @@
 #include "lines.h"
 
 
-int sendMessage(int socket, char * buffer, int len)
+int socketSendMessage(int socket, char * buffer, int len)
 {
 	int r;
 	int l = len;
@@ -21,7 +21,7 @@ int sendMessage(int socket, char * buffer, int len)
 		return(0);	/* full length has been sent */
 }
 // readLine reads a line from a file descriptor and stores it in a buffer
-int recvMessage(int socket, char *buffer, int len)
+int socketRecvMessage(int socket, char *buffer, int len)
 {
 	int r;
 	int l = len;
@@ -41,7 +41,7 @@ int recvMessage(int socket, char *buffer, int len)
 
 
 
-ssize_t readLine(int fd, void *buffer, size_t n)
+ssize_t socketReadLine(int fd, void *buffer, size_t n)
 {
 	// readLines reads a line from a file descriptor and stores it in a buffer
 	ssize_t numRead;  /* num of bytes fetched by last read() */
