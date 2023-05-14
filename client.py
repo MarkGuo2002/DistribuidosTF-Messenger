@@ -89,9 +89,34 @@ class client :
     # 	 * @return ERROR if another error occurred
     @staticmethod
     def  unregister(user, window):
-        window['_SERVER_'].print("s> UNREGISTER OK")
+        msg = ''
         #  Write your code here
-        return client.RC.ERROR
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        
+        sock.connect((client._server, client._port))
+        window['_CLIENT_'].print("Connecting to server: " + client._server + " on port: " + str(client._port) + "...\n", end=" ")
+        try:
+            msg = b'UNREGISTER\0'    
+            sock.sendall(msg)
+            # send user._username, user._alias and user._date to server through socket
+            sock.sendall(client._username.encode())
+            sock.sendall(b'\0')
+            # read response from server
+            msg = readSocket(sock)
+            window['_CLIENT_'].print("DEBUG> " + msg)
+            if (msg == '0'): 
+                window['_SERVER_'].print("s> UNREGISTER OK")
+                return client.RC.OK
+            elif (msg == '1'):
+                window['_SERVER_'].print("s> USERNAME DOES NOT EXIST")
+                return client.RC.USER_ERROR
+            else:
+                window['_SERVER_'].print("s> UNREGISTER FAIL")
+                return client.RC.ERROR
+        
+        finally:
+            #Closing socket
+            sock.close()
 
 
     # *

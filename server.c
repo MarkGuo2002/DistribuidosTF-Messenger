@@ -81,6 +81,7 @@ int clntUnregister(char* username){
     }
     clntList->size--;
     free(aux);
+    printf("Unregister OK\n");
     return 0;
 }
 

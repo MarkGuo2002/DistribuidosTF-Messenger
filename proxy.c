@@ -101,6 +101,33 @@ void treatRequest(int newsd){
             perror("Error in send");
             exit(1);
         }
+    } else if (strcmp(buf, "UNREGISTER")==0) {
+        printf("Treating UNREGISTER\n");
+        char username[MAX];
+        char reply[MAX];
+
+        //read socket and store in usernam
+        if ((bytes_read = socketReadLine(newsd, username, MAX)) > 0) {
+            printf("Received: %s\n", username);
+            printf("bytes_read: %ld\n", bytes_read);
+        }
+        //unregister the client
+        int res = clntUnregister(username);
+        if(res == 1){
+            strcpy(reply, "1");
+        }
+        else if(res == 0){
+            strcpy(reply, "0");
+        }
+        else{
+            strcpy(reply, "2");
+        }
+        //send back the reply
+        if (socketSendMessage(newsd, reply, strlen(reply) + 1) < 0) {
+            perror("Error in send");
+            exit(1);
+        }
+
     }
     else{
         printf("Invalid command\n");
