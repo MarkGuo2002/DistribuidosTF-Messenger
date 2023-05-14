@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#define MAX 256
 
 int port;
 int sd;
@@ -48,11 +49,39 @@ void test(){
 
 
     strcpy(clntUsername, "Juan");
-    unregister(clntUsername);
+    clntUnregister(clntUsername);
     printList();
 
-    unregister("Hello");
+    clntUnregister("Hello");
 }
+
+
+void treatRequest(int newsd){ 
+    char buf[MAX];
+    ssize_t bytes_read;
+    if ((bytes_read = socketReadLine(newsd, buf, MAX)) > 0) {
+        //buf[bytes_read] = '\0';
+        printf("Received: %s\n", buf);
+        printf("bytes_read: %ld\n", bytes_read);
+    }
+    //entering all the cases
+    if (strcmp(buf, "REGISTER")==0){
+        printf("Treating REGISTER\n");
+        char reply[MAX];
+        strcpy(reply, "server said OK to your registration");
+        if (socketSendMessage(newsd, reply, strlen(reply) + 1) < 0) {
+            perror("Error in send");
+            exit(1);
+        }
+    }
+    close(newsd);
+    printf("Connection closed\n\n");
+}
+
+
+
+
+
 
 int main(int argc , char *argv[]){
 
@@ -113,8 +142,19 @@ int main(int argc , char *argv[]){
 
     // Display local IP and port
     printf("Server is running on %s:%d\n", localIP, port);
+    while (1){
+        printf("Waiting for requests...\n");
+    //4.- accept the connection, the server will wait until a client connects to the server, accept returns a new socket descriptor that is used to communicate with the client
+        newsd=accept(sd, (struct sockaddr *)&client_addr, &usersize);
+        if (newsd < 0){
+                printf("Error in accept");
+        }
+        printf("Conexion aceptada de IP: %s\nPuerto: %d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+        treatRequest(newsd);
 
-    
+    }
+    close(sd);
+
     
     return 0;
 }

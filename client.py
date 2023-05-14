@@ -3,6 +3,20 @@ import sys
 import PySimpleGUI as sg
 from enum import Enum
 import argparse
+import socket
+
+
+def readSocket(sock):
+    """Reads a message from the socket until the NULL character is found, and returns it as a string"""
+    acc = ''
+    while True:
+        msg = sock.recv(1)
+        if (msg == b'\0'):
+            break
+        acc += msg.decode()
+    return acc
+
+
 
 class client :
 
@@ -24,16 +38,33 @@ class client :
 
     # ******************** METHODS *******************
     # *
+    # * User is just alias
     # * @param user - User name to register in the system
     # *
     # * @return OK if successful
     # * @return USER_ERROR if the user is already registered
     # * @return ERROR if another error occurred
     @staticmethod
-    def  register(user, window):
-        window['_SERVER_'].print("s> REGISTER OK")
+    def register(user, window):
+        window['_CLIENT_'].print("Registering...")
         #  Write your code here
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        
+        sock.connect((client._server, client._port))
+        window['_CLIENT_'].print("Connecting to server: " + client._server + " on port: " + str(client._port) + "...", end=" ")
+        try:
+            msg = b'REGISTER\0'    
+            sock.sendall(msg)
+            msg = ''
+            msg = readSocket(sock)
+            window['_SERVER_'].print(msg)
+        
+        finally:
+            print("Closing socket")
+            sock.close()
+
         return client.RC.ERROR
+
 
     # *
     # 	 * @param user - User name to unregister from the system
@@ -164,7 +195,7 @@ class client :
 
         if ((args.p < 1024) or (args.p > 65535)):
             parser.error("Error: Port must be in the range 1024 <= port <= 65535");
-            return False;
+            return False
 
         client._server = args.s
         client._port = args.p
@@ -177,6 +208,7 @@ class client :
         if (not client.parseArguments(argv)):
             client.usage()
             exit()
+
 
         lay_col = [[sg.Button('REGISTER',expand_x=True, expand_y=True),
                 sg.Button('UNREGISTER',expand_x=True, expand_y=True),
