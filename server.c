@@ -26,7 +26,7 @@ int clntRegister(char* username, char* alias, char* birthdate){
     while (aux != NULL){
         if (strcmp(aux->username, username) == 0){
             printf("Username already in use\n");
-            return -1;
+            return 1;
         }
         aux = aux->next;
     }

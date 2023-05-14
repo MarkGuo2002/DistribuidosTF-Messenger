@@ -46,24 +46,39 @@ class client :
     # * @return ERROR if another error occurred
     @staticmethod
     def register(user, window):
-        window['_CLIENT_'].print("Registering...")
+        msg = ''
         #  Write your code here
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         
         sock.connect((client._server, client._port))
-        window['_CLIENT_'].print("Connecting to server: " + client._server + " on port: " + str(client._port) + "...", end=" ")
+        window['_CLIENT_'].print("Connecting to server: " + client._server + " on port: " + str(client._port) + "...\n", end=" ")
         try:
             msg = b'REGISTER\0'    
             sock.sendall(msg)
-            msg = ''
+            # send user._username, user._alias and user._date to server through socket
+            sock.sendall(client._username.encode())
+            sock.sendall(b'\0')
+            sock.sendall(client._alias.encode())
+            sock.sendall(b'\0')
+            sock.sendall(client._date.encode())
+            sock.sendall(b'\0')
+            # read response from server
             msg = readSocket(sock)
-            window['_SERVER_'].print(msg)
+            window['_CLIENT_'].print("DEBUG> " + msg)
+
+            if (msg == '0'):
+                window['_SERVER_'].print("s> REGISTER OK")
+                return client.RC.OK
+            elif (msg == '1'):
+                window['_SERVER_'].print("s> USERNAME IN USE")
+                return client.RC.USER_ERROR
+            else:
+                window['_SERVER_'].print("s> REGISTER FAIL")
+                return client.RC.ERROR
         
         finally:
-            print("Closing socket")
+            #Closing socket
             sock.close()
-
-        return client.RC.ERROR
 
 
     # *

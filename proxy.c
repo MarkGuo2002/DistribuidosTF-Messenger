@@ -67,13 +67,52 @@ void treatRequest(int newsd){
     //entering all the cases
     if (strcmp(buf, "REGISTER")==0){
         printf("Treating REGISTER\n");
+        char username[MAX];
+        char alias[MAX];
+        char birthdate[16];
         char reply[MAX];
-        strcpy(reply, "server said OK to your registration");
+
+        //read socket and store in username, alias and birthdate
+        if ((bytes_read = socketReadLine(newsd, username, MAX)) > 0) {
+            printf("Received: %s\n", username);
+            printf("bytes_read: %ld\n", bytes_read);
+        }
+        if ((bytes_read = socketReadLine(newsd, alias, MAX)) > 0) {
+            printf("Received: %s\n", alias);
+            printf("bytes_read: %ld\n", bytes_read);
+        }
+        if ((bytes_read = socketReadLine(newsd, birthdate, MAX)) > 0) {
+            printf("Received: %s\n", birthdate);
+            printf("bytes_read: %ld\n", bytes_read);
+        }
+        //register the client
+        int res = clntRegister(username, alias, birthdate);
+        if(res == 1){
+            strcpy(reply, "1");
+        }
+        else if(res == 0){
+            strcpy(reply, "0");
+        }
+        else{
+            strcpy(reply, "2");
+        }
+        //send back the reply
         if (socketSendMessage(newsd, reply, strlen(reply) + 1) < 0) {
             perror("Error in send");
             exit(1);
         }
     }
+    else{
+        printf("Invalid command\n");
+        char reply[MAX];
+        strcpy(reply, "server said ERROR to your registration");
+        if (socketSendMessage(newsd, reply, strlen(reply) + 1) < 0) {
+            perror("Error in send");
+            exit(1);
+        }
+    }
+    printf("List of clients:\n\n");
+    printList();
     close(newsd);
     printf("Connection closed\n\n");
 }
@@ -142,6 +181,9 @@ int main(int argc , char *argv[]){
 
     // Display local IP and port
     printf("Server is running on %s:%d\n", localIP, port);
+
+    init();
+    
     while (1){
         printf("Waiting for requests...\n");
     //4.- accept the connection, the server will wait until a client connects to the server, accept returns a new socket descriptor that is used to communicate with the client
