@@ -4,7 +4,7 @@ import PySimpleGUI as sg
 from enum import Enum
 import argparse
 import socket
-
+import threading
 
 def readSocket(sock):
     """Reads a message from the socket until the NULL character is found, and returns it as a string"""
@@ -89,26 +89,28 @@ class client :
     # 	 * @return ERROR if another error occurred
     @staticmethod
     def  unregister(user, window):
-        msg = ''
         #  Write your code here
+        msg = ''
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        
         sock.connect((client._server, client._port))
         window['_CLIENT_'].print("Connecting to server: " + client._server + " on port: " + str(client._port) + "...\n", end=" ")
         try:
             msg = b'UNREGISTER\0'    
             sock.sendall(msg)
             # send user._username, user._alias and user._date to server through socket
-            sock.sendall(client._username.encode())
+            sock.sendall(client._alias.encode())
             sock.sendall(b'\0')
             # read response from server
             msg = readSocket(sock)
             window['_CLIENT_'].print("DEBUG> " + msg)
             if (msg == '0'): 
                 window['_SERVER_'].print("s> UNREGISTER OK")
+                client._username = None
+                client._alias = None
+                client._date = None
                 return client.RC.OK
             elif (msg == '1'):
-                window['_SERVER_'].print("s> USERNAME DOES NOT EXIST")
+                window['_SERVER_'].print("s> USER DOES NOT EXIST")
                 return client.RC.USER_ERROR
             else:
                 window['_SERVER_'].print("s> UNREGISTER FAIL")
@@ -128,7 +130,18 @@ class client :
     @staticmethod
     def  connect(user, window):
         window['_SERVER_'].print("s> CONNECT OK")
-        #  Write your code here
+        # find available port
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(('localhost', 0))
+        ip, port = sock.getsockname()
+        sock.close()
+        window['_CLIENT_'].print("Available IP: " + str(ip) + " on port: " + str(port) + "...\n", end=" ")
+
+
+
+
+
+
         return client.RC.ERROR
 
 
@@ -234,7 +247,7 @@ class client :
             return False
 
         if ((args.p < 1024) or (args.p > 65535)):
-            parser.error("Error: Port must be in the range 1024 <= port <= 65535");
+            parser.error("Error: Port must be in the range 1024 <= port <= 65535")
             return False
 
         client._server = args.s

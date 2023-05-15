@@ -101,18 +101,19 @@ void treatRequest(int newsd){
             perror("Error in send");
             exit(1);
         }
+
     } else if (strcmp(buf, "UNREGISTER")==0) {
         printf("Treating UNREGISTER\n");
-        char username[MAX];
+        char alias[MAX];
         char reply[MAX];
 
         //read socket and store in usernam
-        if ((bytes_read = socketReadLine(newsd, username, MAX)) > 0) {
-            printf("Received: %s\n", username);
+        if ((bytes_read = socketReadLine(newsd, alias, MAX)) > 0) {
+            printf("Received alias: %s\n", alias);
             printf("bytes_read: %ld\n", bytes_read);
         }
         //unregister the client
-        int res = clntUnregister(username);
+        int res = clntUnregister(alias);
         if(res == 1){
             strcpy(reply, "1");
         }
@@ -138,10 +139,10 @@ void treatRequest(int newsd){
             exit(1);
         }
     }
-    printf("List of clients:\n\n");
+    printf("\nList of clients:\n\n");
     printList();
     close(newsd);
-    printf("Connection closed\n\n");
+    printf("Connection closed\n===================================================\n\n");
 }
 
 
@@ -202,8 +203,6 @@ int main(int argc , char *argv[]){
 
     // Get local IP address
     char localIP[INET_ADDRSTRLEN];
-
-    socklen_t addrLen = sizeof(server_addr);
     inet_ntop(AF_INET, &(server_addr.sin_addr), localIP, INET_ADDRSTRLEN);
 
     // Display local IP and port

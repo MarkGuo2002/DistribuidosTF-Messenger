@@ -61,10 +61,10 @@ int clntRegister(char* username, char* alias, char* birthdate){
 }
 
 
-int clntUnregister(char* username){
-    struct ClientNode *aux = findUsername(username);
+int clntUnregister(char* alias){
+    struct ClientNode *aux = findAlias(alias);
     if (aux == NULL){
-        printf("Username not found\n");
+        printf("Alias not found\n");
         return 1;
     }
     if (aux->prev == NULL){
@@ -145,6 +145,13 @@ int clntSendMessage(char* senderAlias, char* receiverAlias, char* message){
 
 }
 
-//int printAllUserAlias(){}
+int printAllUserAlias(){
+    struct ClientNode *aux = clntList->head;
+    while (aux != NULL){
+        printf("%s\n", aux->alias);
+        aux = aux->next;
+    }
+    return 0;
+}
 
 
