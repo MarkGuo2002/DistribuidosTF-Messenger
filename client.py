@@ -6,6 +6,10 @@ import argparse
 import socket
 import threading
 
+#this variable will be used to stop the server thread when disconnect is called
+global CLIENT_LISTEN_RUNNING
+
+
 def readSocket(sock):
     """Reads a message from the socket until the NULL character is found, and returns it as a string"""
     acc = ''
@@ -16,6 +20,61 @@ def readSocket(sock):
         acc += msg.decode()
     return acc
 
+import socket
+
+def findAvailablePort():
+    # Create a socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # Bind to port 0, which allows the operating system to assign an available port
+    sock.bind(('localhost', 0))
+    _, port = sock.getsockname()
+    sock.close()
+    return port
+
+
+def getIpAddress():
+    # Create a temporary socket
+    temp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # Connect the temporary socket to a remote server (doesn't matter which server)
+        temp_sock.connect(("8.8.8.8", 80))
+        ip_address = temp_sock.getsockname()[0]
+    finally:
+        temp_sock.close()
+
+    return ip_address
+
+    #now we  will create a function that will be passed to a thread to run a server
+def clientListen(ip, port, window):
+    CLIENT_LISTEN_RUNNING = True
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind((ip, port))
+    sock.listen(1)
+    while CLIENT_LISTEN_RUNNING:
+        print('waiting for a connection')
+        connection, client_address = sock.accept()
+        try:
+            print('connection from', client_address)
+            while CLIENT_LISTEN_RUNNING:
+                data = connection.recv(16)
+                if not data:
+                    window['_CLIENT_'].print('no data from', client_address)
+                    break
+                window['_CLIENT_'].print('received {!r}'.format(data))
+                """
+                if data:
+                    print('sending data back to the client')
+                    connection.sendall(data)
+                else:
+                    print('no data from', client_address)
+                    break
+                """
+        finally:
+            connection.close()
+
+
+    
+    
 
 
 class client :
@@ -35,6 +94,8 @@ class client :
     _username = None
     _alias = None
     _date = None
+
+
 
     # ******************** METHODS *******************
     # *
@@ -131,18 +192,46 @@ class client :
     def  connect(user, window):
         window['_SERVER_'].print("s> CONNECT OK")
         # find available port
+        my_ip = getIpAddress()
+        my_port = findAvailablePort()
+
+        window['_CLIENT_'].print("Available IP: " + str(my_ip) + " on port: " + str(my_port) + "...\n", end=" ")
+        
+        # start listening on new thread
+        server_thread = threading.Thread(target=clientListen, args=(my_ip, my_port, window))
+        server_thread.start()
+        
+        # sending messages to the server
+        msg = ''
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind(('localhost', 0))
-        ip, port = sock.getsockname()
-        sock.close()
-        window['_CLIENT_'].print("Available IP: " + str(ip) + " on port: " + str(port) + "...\n", end=" ")
-
-
-
-
-
-
-        return client.RC.ERROR
+        sock.connect((client._server, client._port))
+        try:
+            msg = b'CONNECT\0'    
+            sock.sendall(msg)
+            # send user._username, user._alias and user._date to server through socket
+            sock.sendall(client._alias.encode())
+            sock.sendall(b'\0')
+            sock.sendall(my_port.encode())
+            sock.sendall(b'\0')
+            # read response from server
+            msg = readSocket(sock)
+            window['_CLIENT_'].print("DEBUG> " + msg)
+            if (msg == '0'): 
+                window['_SERVER_'].print("s> CONNECT OK")
+                return client.RC.OK
+            elif (msg == '1'):
+                window['_SERVER_'].print("s> CONNECT FAIL, USER DOES NOT EXIST")
+                return client.RC.USER_ERROR
+            elif (msg == '2'):
+                window['_SERVER_'].print("s> USER ALREADY CONNECTED")
+                return client.RC.USER_ERROR
+            else:
+                window['_SERVER_'].print("s> CONNECT FAIL")
+                return client.RC.ERROR
+        
+        finally:
+            #Closing socket
+            sock.close()
 
 
     # *
@@ -155,7 +244,38 @@ class client :
     def  disconnect(user, window):
         window['_SERVER_'].print("s> DISCONNECT OK")
         #  Write your code here
-        return client.RC.ERROR
+
+        CLIENT_LISTEN_RUNNING = False
+        server_thread.join()
+        
+        msg = ''
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((client._server, client._port))
+        try:
+            msg = b'DISCONNECT\0'    
+            sock.sendall(msg)
+            sock.sendall(client._alias.encode())
+            sock.sendall(b'\0')
+            
+            # read response from server
+            msg = readSocket(sock)
+            window['_CLIENT_'].print("DEBUG> " + msg)
+            if (msg == '0'): 
+                window['_SERVER_'].print("s> DISCONNECT OK")
+                return client.RC.OK
+            elif (msg == '1'):
+                window['_SERVER_'].print("s> DISCONNECT FAIL, USER DOES NOT EXIST")
+                return client.RC.USER_ERROR
+            elif (msg == '2'):
+                window['_SERVER_'].print("s> USER NOT CONNECTED")
+                return client.RC.USER_ERROR
+            else:
+                window['_SERVER_'].print("s> DISCONNECT FAIL")
+                return client.RC.ERROR
+        
+        finally:
+            #Closing socket
+            sock.close()
 
     # *
     # * @param user    - Receiver user name
