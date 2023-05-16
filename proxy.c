@@ -109,6 +109,7 @@ int sendMessageInList(struct ClientNode * clnt){
     char operation[MAX];
     strcpy(operation, "SEND_MESSAGE");
     while (clnt->pendingMsgList->size > 0){
+        
         //popHeadMessage will return the message and remove it from the list
         messageNode = popHeadMessage(clnt->pendingMsgList);
         printf("SEND MESSAGE %d FROM %s TO %s\n", messageNode->id, messageNode->aliasSender, messageNode->aliasReceiver);
@@ -118,6 +119,14 @@ int sendMessageInList(struct ClientNode * clnt){
             return 1;
         }
         printf("operation sent\n");
+        char msgListSize[8];
+        sprintf(msgListSize, "%d", clnt->pendingMsgList->size);
+        if (socketSendMessage(receiver_listen_sd, msgListSize, strlen(msgListSize)+1) < 0) {
+            perror("Error in send");
+            return 1;
+        }
+        printf("msgListSize [%s] sent\n", msgListSize);
+
         if (socketSendMessage(receiver_listen_sd, messageNode->aliasSender, strlen(messageNode->aliasSender)+1) < 0) {
             perror("Error in send");
             return 1;

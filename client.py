@@ -22,17 +22,20 @@ def readSocket(sock):
 def clientListen(clnt_socket, window):
     #now we  will create a function that will be passed to a thread to run a server
         try:
-            window['_CLIENT_'].print('waiting for a connection')
-            accepted_sock, client_address = clnt_socket.accept()
+            
             while True:
+                window['_CLIENT_'].print('waiting for a connection')
+                accepted_sock, client_address = clnt_socket.accept()
                 print('connection from', client_address)
                 data = readSocket(accepted_sock)
                 window['_SERVER_'].print("s> SERVER SENT: " + data)
                 if data == 'SEND_MESSAGE':
-                    alias_sender = readSocket(accepted_sock)
-                    message_id = readSocket(accepted_sock)
-                    message_content = readSocket(accepted_sock)
-                    window['_SERVER_'].print(f"s> MESSAGE {message_id} FROM {alias_sender}\n{message_content}")
+                    msgListSize = readSocket(accepted_sock)
+                    while msgListSize > 0:
+                        alias_sender = readSocket(accepted_sock)
+                        message_id = readSocket(accepted_sock)
+                        message_content = readSocket(accepted_sock)
+                        window['_SERVER_'].print(f"s> MESSAGE {message_id} FROM {alias_sender}\n{message_content}")
 
         except:
             window['_CLIENT_'].print('Entered exception')
