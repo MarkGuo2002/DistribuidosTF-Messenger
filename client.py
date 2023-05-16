@@ -30,7 +30,7 @@ def clientListen(clnt_socket, window):
                 data = readSocket(accepted_sock)
                 window['_SERVER_'].print("s> SERVER SENT: " + data)
                 if data == 'SEND_MESSAGE':
-                    msgListSize = readSocket(accepted_sock)
+                    msgListSize = int(readSocket(accepted_sock))
                     while msgListSize > 0:
                         alias_sender = readSocket(accepted_sock)
                         message_id = readSocket(accepted_sock)
