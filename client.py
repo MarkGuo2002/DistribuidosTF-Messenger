@@ -32,6 +32,8 @@ def clientListen(clnt_socket, window):
                 if data == 'SEND_MESSAGE':
                     msgListSize = int(readSocket(accepted_sock))
                     while msgListSize > 0:
+                        #skip the msgList size
+                        _ = readSocket(accepted_sock)
                         alias_sender = readSocket(accepted_sock)
                         message_id = readSocket(accepted_sock)
                         message_content = readSocket(accepted_sock)
