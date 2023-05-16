@@ -146,6 +146,12 @@ int sendMessageInList(struct ClientNode * clnt){
             return 1;
         }
         printf("message sent\n");
+        //receive ack message
+        char ack[MAX];
+        if (socketReadLine(receiver_listen_sd, ack, MAX) < 0) {
+            perror("Error in receive");
+            return 1;
+        }
 
     }
     return 0;
@@ -399,21 +405,40 @@ void treatRequest(int newsd){
             printf("Received alias: %s\n", alias);
             printf("bytes_read: %ld\n", bytes_read);
         }
-        //unregister the client
-        int res = clntUnregister(alias);
-        if(res == 1){
-            strcpy(reply, "1");
-        }
-        else if(res == 0){
+        
+        struct ClientNode* clntNode = findAlias(alias);
+        if (clntNode->status == 1){
             strcpy(reply, "0");
         }
-        else{
+
+        else if(clntNode->status == 0){
+            strcpy(reply, "1");
+        }else{
             strcpy(reply, "2");
         }
+        //send the byte reply
         if (socketSendMessage(newsd, reply, sizeof(char)) < 0) {
         perror("Error in send");
         exit(1);
         }
+        //send the number of connected users
+        sprintf(reply, "%d", clntList->size);
+        if (socketSendMessage(newsd, reply, strlen(reply)+1) < 0) {
+            perror("Error in send");
+            exit(1);
+        }
+        // send each client's alias in clntList to socket
+        struct ClientNode* curr = clntList->head;
+        while (curr != NULL){
+            if (socketSendMessage(newsd, curr->alias, strlen(curr->alias)+1) < 0) {
+                perror("Error in send");
+                exit(1);
+            }
+            curr = curr->next;
+        }
+
+        
+
     }
     else{
         printf("Invalid command\n");

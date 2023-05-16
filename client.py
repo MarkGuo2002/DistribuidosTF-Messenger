@@ -24,7 +24,7 @@ def clientListen(clnt_socket, window):
         try:
             
             while True:
-                window['_CLIENT_'].print('waiting for a connection')
+                #borrar - window['_CLIENT_'].print('waiting for a connection')
                 accepted_sock, client_address = clnt_socket.accept()
                 print('connection from', client_address)
                 data = readSocket(accepted_sock)
@@ -38,6 +38,9 @@ def clientListen(clnt_socket, window):
                     message_id = readSocket(accepted_sock)
                     message_content = readSocket(accepted_sock)
                     window['_SERVER_'].print(f"s> MESSAGE {message_id} FROM {alias_sender}\n{message_content}")
+                    # SEND MESSAGE ACK
+                    accepted_sock.sendall(b'0')
+                    
 
         except:
             window['_CLIENT_'].print('Entered exception')
@@ -87,7 +90,7 @@ class client :
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         
         sock.connect((client._server, client._port))
-        window['_CLIENT_'].print("Connecting to server: " + client._server + " on port: " + str(client._port) + "...\n", end=" ")
+        #borrar - window['_CLIENT_'].print("Connecting to server: " + client._server + " on port: " + str(client._port) + "...\n", end=" ")
         try:
             msg = b'REGISTER\0'    
             sock.sendall(msg)
@@ -127,7 +130,7 @@ class client :
         msg = ''
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((client._server, client._port))
-        window['_CLIENT_'].print("Connecting to server: " + client._server + " on port: " + str(client._port) + "...\n", end=" ")
+        #borrar - window['_CLIENT_'].print("Connecting to server: " + client._server + " on port: " + str(client._port) + "...\n", end=" ")
         try:
             msg = b'UNREGISTER\0'    
             sock.sendall(msg)
@@ -168,7 +171,7 @@ class client :
         client._clnt_server_socket.listen(1)
         my_port = client._clnt_server_socket.getsockname()[1]
 
-        window['_CLIENT_'].print("Available IP: ??? on port: " + str(my_port) + "...\n", end=" ")
+        #borrar - window['_CLIENT_'].print("Available IP: ??? on port: " + str(my_port) + "...\n", end=" ")
         
         # sending messages to the server
         msg = ''
@@ -258,7 +261,8 @@ class client :
         if len(message) > 256:
             return client.RC.ERROR
 
-        window['_SERVER_'].print("s> SEND " + user + " " + message + "\n", end="")
+       #borrar - window['_SERVER_'].print("s> SEND " + user + " " + message + "\n", end="")
+       #a lo mejor es cambiarlo a  _CLIENT_, tengo que comprobarlo
         #  Write your code here
         msg = ''
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -296,6 +300,35 @@ class client :
     def  connectedUsers(window):
         window['_SERVER_'].print("s> CONNECTED USERS OK")
         #  Write your code here
+        msg = ''
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((client._server, client._port))
+        try:
+            #send user alias to server
+            msg = b'CONNECTEDUSERS\0'
+            sock.sendall(msg)
+            sock.sendall(client._alias.encode())
+            sock.sendall(b'\0')
+            msg = sock.recv(1)
+            if (msg == b'0'): 
+                window['_SERVER_'].print("s> CONNECTED USERS OK")
+                clntCount = int(readSocket(sock))
+                printMessage = "s> CONNECTED USERS ("+ str(clntCount) +" users connected) OK - "
+                for i in range(clntCount):
+                    userAlias = readSocket(sock)
+                    printMessage += userAlias + ", "
+                window['_SERVER_'].print(printMessage)
+                return client.RC.OK
+            elif (msg == b'1'):
+                window['_SERVER_'].print("s> CONNECTED USERS FAIL / USER IS NOT CONNECTED")
+                return client.RC.USER_ERROR
+            else:
+                window['_SERVER_'].print("s> CONNECTED USERS FAIL")
+                return client.RC.ERROR
+            
+        finally:
+            #Closing socket
+            sock.close()
         return client.RC.ERROR
 
 

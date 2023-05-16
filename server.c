@@ -80,6 +80,19 @@ int clntUnregister(char* alias){
         aux->next->prev = aux->prev;
     }
     clntList->size--;
+    free(aux->username);
+    free(aux->alias);
+    free(aux->birthdate);
+    //free all the message nodes inside the pending message list
+    while(aux->pendingMsgList->head != NULL){
+        struct PendingMessageNode *aux2 = aux->pendingMsgList->head;
+        aux->pendingMsgList->head = aux->pendingMsgList->head->next;
+        free(aux2->message);
+        free(aux2->aliasSender);
+        free(aux2->aliasReceiver);
+        free(aux2);
+    }
+    free(aux->pendingMsgList);
     free(aux);
     printf("Unregister OK\n");
     return 0;
