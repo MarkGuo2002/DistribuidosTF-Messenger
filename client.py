@@ -30,16 +30,18 @@ def clientListen(clnt_socket, window):
                 data = readSocket(accepted_sock)
                 window['_SERVER_'].print("s> SERVER SENT: " + data)
                 if data == 'SEND_MESSAGE':
-                    #msgListSize = int(readSocket(accepted_sock))
-                    #while msgListSize > 0:
-                        #skip the msgList size
-                     #   _ = readSocket(accepted_sock)
                     alias_sender = readSocket(accepted_sock)
                     message_id = readSocket(accepted_sock)
                     message_content = readSocket(accepted_sock)
                     window['_SERVER_'].print(f"s> MESSAGE {message_id} FROM {alias_sender}\n{message_content}")
                     # SEND MESSAGE ACK
                     accepted_sock.sendall(b'0')
+                    accepted_sock.close()
+                elif data == 'SEND_MESS_ACK':
+                    message_id = readSocket(accepted_sock)
+                    window['_SERVER_'].print(f"s> SEND MESSAGE {message_id} OK")
+                    accepted_sock.close()
+
                     
 
         except:
@@ -317,6 +319,7 @@ class client :
                 for i in range(clntCount):
                     userAlias = readSocket(sock)
                     printMessage += userAlias + ", "
+                # get rid
                 window['_SERVER_'].print(printMessage)
                 return client.RC.OK
             elif (msg == b'1'):

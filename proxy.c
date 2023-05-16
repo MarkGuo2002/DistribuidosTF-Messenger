@@ -99,19 +99,19 @@ int getSocketfromIpPort(char* ip, int port){
 }
 
 
-int sendMessageInList(struct ClientNode * clnt){
+int sendMessageInList(struct ClientNode * receiverNode, struct ClientNode * senderNode){
     /*In this function, first gets the receiver's listening thread's socket by it ip and port.
     Then, it sends the operation, aliasSender, id and to the receiver's listening thread.
     */
     
     struct PendingMessageNode * messageNode;
-    int receiver_listen_sd = getSocketfromIpPort(clnt->ip, clnt->port);
     char operation[MAX];
     strcpy(operation, "SEND_MESSAGE");
-    while (clnt->pendingMsgList->size > 0){
+    while (receiverNode->pendingMsgList->size > 0){
         
+        int receiver_listen_sd = getSocketfromIpPort(receiverNode->ip, receiverNode->port);
         //popHeadMessage will return the message and remove it from the list
-        messageNode = popHeadMessage(clnt->pendingMsgList);
+        messageNode = popHeadMessage(receiverNode->pendingMsgList);
         printf("SEND MESSAGE %d FROM %s TO %s\n", messageNode->id, messageNode->aliasSender, messageNode->aliasReceiver);
         //send the message to the client
         if (socketSendMessage(receiver_listen_sd, operation, strlen(operation)+1) < 0) {
@@ -120,7 +120,7 @@ int sendMessageInList(struct ClientNode * clnt){
         }
         printf("operation sent\n");
         /*char msgListSize[8];
-        sprintf(msgListSize, "%d", clnt->pendingMsgList->size);
+        sprintf(msgListSize, "%d", receiverNode->pendingMsgList->size);
         if (socketSendMessage(receiver_listen_sd, msgListSize, strlen(msgListSize)+1) < 0) {
             perror("Error in send");
             return 1;
@@ -151,6 +151,37 @@ int sendMessageInList(struct ClientNode * clnt){
         if (socketReadLine(receiver_listen_sd, ack, MAX) < 0) {
             perror("Error in receive");
             return 1;
+        }
+        
+
+        close(receiver_listen_sd);
+
+        //check if the message was sent successfully, and if so, send a notification to the sender
+        printf("ack received: %s\n", ack);
+        if (strcmp(ack, "0") == 0){
+            printf("Message sent successfully\n");
+            //check if sender is still connected
+            if (senderNode->status == 0){
+                printf("Sender is not connected\n");
+                return 0;
+            }
+            //send back a notification to the sender
+            char sendBackOperation[MAX];
+            strcpy(sendBackOperation, "SEND_MESS_ACK");
+            int sender_listen_sd = getSocketfromIpPort(senderNode->ip, senderNode->port);
+            if (socketSendMessage(sender_listen_sd, sendBackOperation, strlen(sendBackOperation)+1) < 0) {
+                perror("Error in send");
+                return 1;
+            }
+            printf("sendBackOperation sent to sender\n");
+            //send the messageNode->id as well
+            if (socketSendMessage(sender_listen_sd, id, strlen(id)+1) < 0) {
+                perror("Error in send");
+                return 1;
+            }
+            printf("id sent\n");
+            close(sender_listen_sd);
+
         }
 
     }
@@ -368,7 +399,7 @@ void treatRequest(int newsd){
             }
             //now check if the receiver is connected, if it is, send the message
             if (receivernode->status == 1){
-                sendMessageInList(receivernode);
+                sendMessageInList(receivernode, sendernode);
                 //the printing is done in the sendMessageInList function
 
             }
