@@ -145,8 +145,8 @@ int clntSendMessage(char* senderAlias, char* receiverAlias, char* message){
     //this function only adds the message to the pending message list of the receiver, like the first part of the send functoin
     struct ClientNode * sendernode = findAlias(senderAlias);
     struct ClientNode * receivernode = findAlias(receiverAlias);
-    if ((sendernode == NULL) || (receivernode == NULL)){
-        printf("Sender alias not found\n");
+    if ((sendernode == NULL) || (receivernode == NULL) || (sendernode->status == 0)){
+        printf("Sender alias not found or not connected\n");
         return 1;
     }
     //now call this function int appendMsgNode(struct PendingMessageList* ClntPendingMsgList, int id, char* message, char* aliasSender, char* aliasReceiver)

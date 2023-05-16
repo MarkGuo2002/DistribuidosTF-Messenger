@@ -287,7 +287,7 @@ class client :
                 
                 return client.RC.OK
             elif (msg == b'1'):
-                window['_SERVER_'].print("s> SEND FAIL, USER DOES NOT EXIST")
+                window['_SERVER_'].print("s> SEND FAIL, USER DOES NOT EXIST / NOT CONNECTED")
                 return client.RC.USER_ERROR
             else:
                 window['_SERVER_'].print("s> SEND FAIL")

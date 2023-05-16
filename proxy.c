@@ -235,14 +235,10 @@ void treatRequest(int newsd){
             strcpy(reply, "2");
         }
         //send back the reply
-        if (socketSendMessage(newsd, reply, strlen(reply) + 1) < 0) {
+        if (socketSendMessage(newsd, reply, sizeof(char)) < 0) {
             perror("Error in send");
             exit(1);
         }
-        if (socketSendMessage(newsd, reply, sizeof(char)) < 0) {
-        perror("Error in send");
-        exit(1);
-    }
 
     } else if (strcmp(buf, "UNREGISTER")==0) {
         printf("Treating UNREGISTER\n");
