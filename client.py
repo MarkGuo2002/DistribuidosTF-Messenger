@@ -18,30 +18,6 @@ def readSocket(sock):
         acc += msg.decode()
     return acc
 
-import socket
-
-def findAvailablePort():
-    # Create a socket
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # Bind to port 0, which allows the operating system to assign an available port
-    sock.bind(('localhost', 0))
-    _, port = sock.getsockname()
-    sock.close()
-    return port
-
-
-def getIpAddress():
-    # Create a temporary socket
-    temp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        # Connect the temporary socket to a remote server (doesn't matter which server)
-        temp_sock.connect(("8.8.8.8", 80))
-        ip_address = temp_sock.getsockname()[0]
-    finally:
-        temp_sock.close()
-
-    return ip_address
-
 
 def clientListen(clnt_socket, window):
     #now we  will create a function that will be passed to a thread to run a server
@@ -50,10 +26,9 @@ def clientListen(clnt_socket, window):
             accepted_sock, client_address = clnt_socket.accept()
             print('connection from', client_address)
             while True:
-                window['_SERVER_'].print("s> HERE'S THREAD WAITING FOR SERVER MSG")
                 data = readSocket(accepted_sock)
+                window['_SERVER_'].print("s> SERVER SENT: " + data)
                 if data == 'SEND_MESSAGE':
-                    window['_SERVER_'].print("s> SERVER SENT SEND_MESSAGE")
                     alias_sender = readSocket(accepted_sock)
                     message_id = readSocket(accepted_sock)
                     message_content = readSocket(accepted_sock)

@@ -100,43 +100,45 @@ int getSocketfromIpPort(char* ip, int port){
 
 
 int sendMessageInList(struct ClientNode * clnt){
-
-         //here check if there are messages in pendingMsgList
-        struct PendingMessageNode * messageNode;
-        int receiver_listen_sd = getSocketfromIpPort(clnt->ip, clnt->port);
-        char operation[MAX];
-        strcpy(operation, "SEND_MESSAGE");
-        while (clnt->pendingMsgList->size > 0){
-            //popHeadMessage will return the message and remove it from the list
-            messageNode = popHeadMessage(clnt->pendingMsgList);
-            printf("SEND MESSAGE %d FROM %s TO %s\n", messageNode->id, messageNode->aliasSender, messageNode->aliasReceiver);
-            //send the message to the client
-            if (socketSendMessage(receiver_listen_sd, operation, strlen(operation)+1) < 0) {
-                perror("Error in send");
-                return 1;
-            }
-            printf("operation sent\n");
-            if (socketSendMessage(receiver_listen_sd, messageNode->aliasSender, strlen(messageNode->aliasSender)+1) < 0) {
-                perror("Error in send");
-                return 1;
-            }
-            printf("aliasSender sent\n");
-            //send the messageNode->id as well
-            char id[MAX];
-            sprintf(id, "%d", messageNode->id);
-            if (socketSendMessage(receiver_listen_sd, id, strlen(id)+1) < 0) {
-                perror("Error in send");
-                return 1;
-            }
-            printf("id sent\n");
-            if (socketSendMessage(receiver_listen_sd, messageNode->message, strlen(messageNode->message)+1) < 0) {
-                perror("Error in send");
-                return 1;
-            }
-            printf("message sent\n");
-
+    /*In this function, first gets the receiver's listening thread's socket by it ip and port.
+    Then, it sends the operation, aliasSender, id and to the receiver's listening thread.
+    */
+    
+    struct PendingMessageNode * messageNode;
+    int receiver_listen_sd = getSocketfromIpPort(clnt->ip, clnt->port);
+    char operation[MAX];
+    strcpy(operation, "SEND_MESSAGE");
+    while (clnt->pendingMsgList->size > 0){
+        //popHeadMessage will return the message and remove it from the list
+        messageNode = popHeadMessage(clnt->pendingMsgList);
+        printf("SEND MESSAGE %d FROM %s TO %s\n", messageNode->id, messageNode->aliasSender, messageNode->aliasReceiver);
+        //send the message to the client
+        if (socketSendMessage(receiver_listen_sd, operation, strlen(operation)+1) < 0) {
+            perror("Error in send");
+            return 1;
         }
-        return 0;
+        printf("operation sent\n");
+        if (socketSendMessage(receiver_listen_sd, messageNode->aliasSender, strlen(messageNode->aliasSender)+1) < 0) {
+            perror("Error in send");
+            return 1;
+        }
+        printf("aliasSender sent\n");
+        //send the messageNode->id as well
+        char id[MAX];
+        sprintf(id, "%d", messageNode->id);
+        if (socketSendMessage(receiver_listen_sd, id, strlen(id)+1) < 0) {
+            perror("Error in send");
+            return 1;
+        }
+        printf("id sent\n");
+        if (socketSendMessage(receiver_listen_sd, messageNode->message, strlen(messageNode->message)+1) < 0) {
+            perror("Error in send");
+            return 1;
+        }
+        printf("message sent\n");
+
+    }
+    return 0;
 }
 
 
@@ -259,11 +261,12 @@ void treatRequest(int newsd){
 
         //send back the reply
         if (socketSendMessage(newsd, reply, sizeof(char)) < 0) {
-        perror("Error in send");
-        exit(1);
+            perror("Error in send");
+            exit(1);
         }
         struct ClientNode* clntNode = findAlias(alias);
         if (clntNode->pendingMsgList->size > 0){
+            printf("YES THERE ARE PENDING MESSAGES\n");
             //send the pending messages
             sendMessageInList(clntNode);
         }
@@ -303,6 +306,13 @@ void treatRequest(int newsd){
         }
 
     } else if (strcmp(buf, "SEND")==0) {
+        /*First we read aliases and message from client through socket
+        After that clntSendMessage does the first half of the process, which checks if both
+        users exist and if so, the message with its corresponding fields filled will be appended
+        at the end of the PendingMessageList.
+    
+        after that it sends back the result of the first half, if the first half was successful(0),
+        the program checks if the receiver is online, if it is, send his pending messages to him */
         printf("Treating SEND\n");
         char reply[MAX];
         char aliasSender[MAX];
@@ -322,6 +332,11 @@ void treatRequest(int newsd){
         }
         // send the message, only appends to the list if everything correct, nothing else
         int res = clntSendMessage(aliasSender, aliasReceiver, message);
+        sprintf(reply, "%d", res);
+        if (socketSendMessage(newsd, reply, sizeof(char)) < 0) {
+            perror("Error in send");
+            exit(1);
+        }
         if (res == 0){
             printf("Message stored in list\n");
 
@@ -338,6 +353,11 @@ void treatRequest(int newsd){
             //now check if the receiver is connected, if it is, send the message
             if (receivernode->status == 1){
                 sendMessageInList(receivernode);
+                //the printing is done in the sendMessageInList function
+
+            }
+            else{
+                printf("MESSAGE %d FROM %s TO %s STORED", id, aliasSender, aliasReceiver);
 
             }
         
@@ -346,8 +366,16 @@ void treatRequest(int newsd){
         }else if (res == 1){
             printf("Alias not found\n");
             strcpy(reply, "1");
+            if (socketSendMessage(newsd, reply, sizeof(char)) < 0) {
+                perror("Error in send");
+            exit(1);
+            }
         }else{
             strcpy(reply, "2");
+            if (socketSendMessage(newsd, reply, sizeof(char)) < 0) {
+                perror("Error in send");
+            exit(1);
+            }
         }
         
         

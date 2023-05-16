@@ -142,6 +142,7 @@ int clntSendMessage(char* senderAlias, char* receiverAlias, char* message){
         return 2;
     }
     sendernode->lastMessageId++;
+    printf("Append message OKm and now sender lastmessageid = %d\n", sendernode->lastMessageId);
     return 0;
 }
 
