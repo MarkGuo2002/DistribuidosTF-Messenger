@@ -129,6 +129,7 @@ int clntDisconnect(char *alias){
 }
 
 int clntSendMessage(char* senderAlias, char* receiverAlias, char* message){
+    //this function only adds the message to the pending message list of the receiver, like the first part of the send functoin
     struct ClientNode * sendernode = findAlias(senderAlias);
     struct ClientNode * receivernode = findAlias(receiverAlias);
     if ((sendernode == NULL) || (receivernode == NULL)){
@@ -136,13 +137,12 @@ int clntSendMessage(char* senderAlias, char* receiverAlias, char* message){
         return 1;
     }
     //now call this function int appendMsgNode(struct PendingMessageList* ClntPendingMsgList, int id, char* message, char* aliasSender, char* aliasReceiver)
-    appendMsgNode(receivernode->pendingMsgList, sendernode->lastMessageId, message, senderAlias, receiverAlias);
+    if(appendMsgNode(receivernode->pendingMsgList, sendernode->lastMessageId, message, senderAlias, receiverAlias) == 1){
+        printf("Error appending message\n");
+        return 2;
+    }
     sendernode->lastMessageId++;
     return 0;
-
-    
-    
-
 }
 
 int printAllUserAlias(){

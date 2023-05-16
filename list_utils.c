@@ -3,7 +3,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 
 
@@ -95,3 +98,28 @@ int appendMsgNode(struct PendingMessageList* ClntPendingMsgList, int id, char* m
 
 }
 
+
+struct PendingMessageNode* popHeadMessage(struct PendingMessageList* ClntPendingMsgList){
+    if (ClntPendingMsgList->size == 0){
+        printf("ClntPendingMsgList is empty\n");
+        return NULL;
+    }
+    struct PendingMessageNode *aux = ClntPendingMsgList->head;
+    ClntPendingMsgList->head = ClntPendingMsgList->head->next;
+    ClntPendingMsgList->size--;
+    return aux;
+}
+
+void printMessageList(struct PendingMessageList* ClntPendingMsgList){
+    struct PendingMessageNode *aux = ClntPendingMsgList->head;
+    if (aux == NULL){
+        printf("ClntPendingMsgList is empty\n");
+        return;
+    }
+    while (aux != NULL){
+        //split the print in two lines for better readability  
+        printf("ID: %d\nMessage: %s\nSender: %s\nReceiver: %s\n\n", aux->id, aux->message, aux->aliasSender, aux->aliasReceiver);
+        aux = aux->next;
+    }
+    printf("\n\n");
+}

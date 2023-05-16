@@ -9,5 +9,6 @@ void printList();
 struct ClientNode *findUsername(char* username);
 struct ClientNode *findAlias(char* alias);
 int appendMsgNode(struct PendingMessageList* ClntPendingMsgList, int id, char* message, char* aliasSender, char* aliasReceiver);
-
+struct PendingMessageNode* popHeadMessage(struct PendingMessageList* ClntPendingMsgList);
+void printMessageList(struct PendingMessageList* ClntPendingMsgList);
 #endif

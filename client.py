@@ -6,8 +6,6 @@ import argparse
 import socket
 import threading
 
-#this variable will be used to stop the server thread when disconnect is called
-global CLIENT_LISTEN_RUNNING
 
 
 def readSocket(sock):
@@ -44,38 +42,32 @@ def getIpAddress():
 
     return ip_address
 
+
+def clientListen(clnt_socket, window):
     #now we  will create a function that will be passed to a thread to run a server
-def clientListen(ip, port, window):
-    CLIENT_LISTEN_RUNNING = True
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind((ip, port))
-    sock.listen(1)
-    while CLIENT_LISTEN_RUNNING:
-        print('waiting for a connection')
-        connection, client_address = sock.accept()
         try:
+            window['_CLIENT_'].print('waiting for a connection')
+            accepted_sock, client_address = clnt_socket.accept()
             print('connection from', client_address)
-            while CLIENT_LISTEN_RUNNING:
-                data = connection.recv(16)
-                if not data:
-                    window['_CLIENT_'].print('no data from', client_address)
-                    break
-                window['_CLIENT_'].print('received {!r}'.format(data))
-                """
-                if data:
-                    print('sending data back to the client')
-                    connection.sendall(data)
-                else:
-                    print('no data from', client_address)
-                    break
-                """
+            while True:
+                window['_SERVER_'].print("s> HERE'S THREAD WAITING FOR SERVER MSG")
+                data = readSocket(accepted_sock)
+                if data == 'SEND_MESSAGE':
+                    window['_SERVER_'].print("s> SERVER SENT SEND_MESSAGE")
+                    alias_sender = readSocket(accepted_sock)
+                    message_id = readSocket(accepted_sock)
+                    message_content = readSocket(accepted_sock)
+                    window['_SERVER_'].print(f"s> MESSAGE {message_id} FROM {alias_sender}\n{message_content}")
+
+        except:
+            window['_CLIENT_'].print('Entered exception')
+            
+
         finally:
-            connection.close()
-
-
+            accepted_sock.close()
     
     
-
+#window['_CLIENT_'].print('no data from', client_address)
 
 class client :
 
@@ -94,7 +86,10 @@ class client :
     _username = None
     _alias = None
     _date = None
+    _clnt_server_socket = None
+    _clnt_listen_thread = None
 
+    
 
 
     # ******************** METHODS *******************
@@ -124,13 +119,11 @@ class client :
             sock.sendall(client._date.encode())
             sock.sendall(b'\0')
             # read response from server
-            msg = readSocket(sock)
-            window['_CLIENT_'].print("DEBUG> " + msg)
-
-            if (msg == '0'):
+            msg = sock.recv(1)
+            if (msg == b'0'):
                 window['_SERVER_'].print("s> REGISTER OK")
                 return client.RC.OK
-            elif (msg == '1'):
+            elif (msg == b'1'):
                 window['_SERVER_'].print("s> USERNAME IN USE")
                 return client.RC.USER_ERROR
             else:
@@ -162,15 +155,14 @@ class client :
             sock.sendall(client._alias.encode())
             sock.sendall(b'\0')
             # read response from server
-            msg = readSocket(sock)
-            window['_CLIENT_'].print("DEBUG> " + msg)
-            if (msg == '0'): 
+            msg = sock.recv(1)
+            if (msg == b'0'): 
                 window['_SERVER_'].print("s> UNREGISTER OK")
                 client._username = None
                 client._alias = None
                 client._date = None
                 return client.RC.OK
-            elif (msg == '1'):
+            elif (msg == b'1'):
                 window['_SERVER_'].print("s> USER DOES NOT EXIST")
                 return client.RC.USER_ERROR
             else:
@@ -189,40 +181,39 @@ class client :
     # * @return USER_ERROR if the user does not exist or if it is already connected
     # * @return ERROR if another error occurred
     @staticmethod
-    def  connect(user, window):
-        window['_SERVER_'].print("s> CONNECT OK")
+    def connect(user, window):
         # find available port
-        my_ip = getIpAddress()
-        my_port = findAvailablePort()
+        client._clnt_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client._clnt_server_socket.bind(('' , 0))
+        client._clnt_server_socket.listen(1)
+        my_port = client._clnt_server_socket.getsockname()[1]
 
-        window['_CLIENT_'].print("Available IP: " + str(my_ip) + " on port: " + str(my_port) + "...\n", end=" ")
-        
-        # start listening on new thread
-        server_thread = threading.Thread(target=clientListen, args=(my_ip, my_port, window))
-        server_thread.start()
+        window['_CLIENT_'].print("Available IP: ??? on port: " + str(my_port) + "...\n", end=" ")
         
         # sending messages to the server
         msg = ''
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((client._server, client._port))
+
+        client._clnt_listen_thread = threading.Thread(target=clientListen, args=(client._clnt_server_socket, window))
+        client._clnt_listen_thread.start()
         try:
             msg = b'CONNECT\0'    
             sock.sendall(msg)
             # send user._username, user._alias and user._date to server through socket
             sock.sendall(client._alias.encode())
             sock.sendall(b'\0')
-            sock.sendall(my_port.encode())
+            sock.sendall(str(my_port).encode())
             sock.sendall(b'\0')
             # read response from server
-            msg = readSocket(sock)
-            window['_CLIENT_'].print("DEBUG> " + msg)
-            if (msg == '0'): 
+            msg = sock.recv(1)
+            if (msg == b'0'): 
                 window['_SERVER_'].print("s> CONNECT OK")
                 return client.RC.OK
-            elif (msg == '1'):
+            elif (msg == b'1'):
                 window['_SERVER_'].print("s> CONNECT FAIL, USER DOES NOT EXIST")
                 return client.RC.USER_ERROR
-            elif (msg == '2'):
+            elif (msg == b'2'):
                 window['_SERVER_'].print("s> USER ALREADY CONNECTED")
                 return client.RC.USER_ERROR
             else:
@@ -242,11 +233,10 @@ class client :
     # * @return ERROR if another error occurred
     @staticmethod
     def  disconnect(user, window):
-        window['_SERVER_'].print("s> DISCONNECT OK")
         #  Write your code here
 
-        CLIENT_LISTEN_RUNNING = False
-        server_thread.join()
+        if client._clnt_server_socket:
+            client._clnt_server_socket.close()
         
         msg = ''
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -258,15 +248,14 @@ class client :
             sock.sendall(b'\0')
             
             # read response from server
-            msg = readSocket(sock)
-            window['_CLIENT_'].print("DEBUG> " + msg)
-            if (msg == '0'): 
+            msg = sock.recv(1)
+            if (msg == b'0'): 
                 window['_SERVER_'].print("s> DISCONNECT OK")
                 return client.RC.OK
-            elif (msg == '1'):
+            elif (msg == b'1'):
                 window['_SERVER_'].print("s> DISCONNECT FAIL, USER DOES NOT EXIST")
                 return client.RC.USER_ERROR
-            elif (msg == '2'):
+            elif (msg == b'2'):
                 window['_SERVER_'].print("s> USER NOT CONNECTED")
                 return client.RC.USER_ERROR
             else:
@@ -286,26 +275,42 @@ class client :
     # * @return ERROR the user does not exist or another error occurred
     @staticmethod
     def  send(user, message, window):
-        window['_SERVER_'].print("s> SEND MESSAGE OK")
-        print("SEND " + user + " " + message)
-        #  Write your code here
-        return client.RC.ERROR
+        if len(message) > 256:
+            return client.RC.ERROR
 
-    # *
-    # * @param user    - Receiver user name
-    # * @param message - Message to be sent
-    # * @param file    - file  to be sent
-
-    # *
-    # * @return OK if the server had successfully delivered the message
-    # * @return USER_ERROR if the user is not connected (the message is queued for delivery)
-    # * @return ERROR the user does not exist or another error occurred
-    @staticmethod
-    def  sendAttach(user, message, file, window):
-        window['_SERVER_'].print("s> SENDATTACH MESSAGE OK")
-        print("SEND ATTACH " + user + " " + message + " " + file)
+        window['_SERVER_'].print("s> SEND " + user + " " + message + "\n", end="")
         #  Write your code here
-        return client.RC.ERROR
+        msg = ''
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((client._server, client._port))
+        try:
+            msg = b'SEND\0'    
+            sock.sendall(msg)
+            sock.sendall(client._alias.encode())
+            sock.sendall(b'\0')
+            sock.sendall(user.encode())
+            sock.sendall(b'\0')
+            sock.sendall(message.encode())
+            sock.sendall(b'\0')
+
+            # read response from server
+            msg = sock.recv(1)
+            if (msg == b'0'): 
+                msg_id = readSocket(sock)
+                window['_SERVER_'].print("s> SEND OK - MESSAGE: " + msg_id)
+                
+                return client.RC.OK
+            elif (msg == b'1'):
+                window['_SERVER_'].print("s> SEND FAIL, USER DOES NOT EXIST")
+                return client.RC.USER_ERROR
+            else:
+                window['_SERVER_'].print("s> SEND FAIL")
+                return client.RC.ERROR
+        
+        finally:
+            #Closing socket
+            sock.close()
+
 
     @staticmethod
     def  connectedUsers(window):
@@ -449,7 +454,7 @@ class client :
                 window['_CLIENT_'].print('c> SEND ' + values['_INDEST_'] + " " + values['_IN_'])
 
                 if (values['_INDEST_'] != '' and values['_IN_'] != '' and values['_INDEST_'] != 'User' and values['_IN_'] != 'Text') :
-                    client.send(values['_INDEST_'], values['_IN_'], window)
+                    client. send(values['_INDEST_'], values['_IN_'], window)
                 else :
                     window['_CLIENT_'].print("Syntax error. Insert <destUser> <message>")
 
