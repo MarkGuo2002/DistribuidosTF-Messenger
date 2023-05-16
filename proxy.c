@@ -99,11 +99,11 @@ int getSocketfromIpPort(char* ip, int port){
 }
 
 
-int sendMessageInList(struct ClientNode * receiverNode, struct ClientNode * senderNode){
+int sendMessageInList(struct ClientNode * receiverNode){
     /*In this function, first gets the receiver's listening thread's socket by it ip and port.
     Then, it sends the operation, aliasSender, id and to the receiver's listening thread.
     */
-    
+    struct ClientNode * senderNode;
     struct PendingMessageNode * messageNode;
     char operation[MAX];
     strcpy(operation, "SEND_MESSAGE");
@@ -112,6 +112,8 @@ int sendMessageInList(struct ClientNode * receiverNode, struct ClientNode * send
         int receiver_listen_sd = getSocketfromIpPort(receiverNode->ip, receiverNode->port);
         //popHeadMessage will return the message and remove it from the list
         messageNode = popHeadMessage(receiverNode->pendingMsgList);
+        //get the senderNode
+        senderNode = findAlias(messageNode->aliasSender);
         printf("SEND MESSAGE %d FROM %s TO %s\n", messageNode->id, messageNode->aliasSender, messageNode->aliasReceiver);
         //send the message to the client
         if (socketSendMessage(receiver_listen_sd, operation, strlen(operation)+1) < 0) {
@@ -399,7 +401,7 @@ void treatRequest(int newsd){
             }
             //now check if the receiver is connected, if it is, send the message
             if (receivernode->status == 1){
-                sendMessageInList(receivernode, sendernode);
+                sendMessageInList(receivernode);
                 //the printing is done in the sendMessageInList function
 
             }
