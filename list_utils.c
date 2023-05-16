@@ -32,7 +32,7 @@ void printList(){
     while (aux != NULL){
         //split the print in two lines for better readability  
         printf("Username: %s\nAlias: %s\nBirthdate: %s\nStatus: %d\nIP: %s\nPort: %d\n"
-        "Last msg ID: %u\n\n", aux->username, aux->alias, aux->birthdate, aux->status, aux->ip, aux->port, aux->lastMessageId);
+        "Last msg ID: %u\nMsg list size: %d\n\n", aux->username, aux->alias, aux->birthdate, aux->status, aux->ip, aux->port, aux->lastMessageId, aux->pendingMsgList->size);
 
         aux = aux->next;
     }

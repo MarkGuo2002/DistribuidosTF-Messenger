@@ -22,10 +22,11 @@ def readSocket(sock):
 def clientListen(clnt_socket, window):
     #now we  will create a function that will be passed to a thread to run a server
         try:
-            window['_CLIENT_'].print('waiting for a connection')
-            accepted_sock, client_address = clnt_socket.accept()
-            print('connection from', client_address)
+            
             while True:
+                window['_CLIENT_'].print('waiting for a connection')
+                accepted_sock, client_address = clnt_socket.accept()
+                print('connection from', client_address)
                 data = readSocket(accepted_sock)
                 window['_SERVER_'].print("s> SERVER SENT: " + data)
                 if data == 'SEND_MESSAGE':
